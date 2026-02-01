@@ -1,8 +1,24 @@
-import os, time, yt_dlp
+import os
+import time
+import yt_dlp
+import threading
+import socketserver
+import http.server
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ForceReply
 
-# --- কনফিগারেশন ---
+# --- ১. Render পোর্টের সমস্যা সমাধানের জন্য Fake Web Server ---
+def run_web_server():
+    PORT = int(os.environ.get("PORT", 8080))
+    Handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"Server started on port {PORT}")
+        httpd.serve_forever()
+
+# আলাদা থ্রেডে সার্ভার চালু করা
+threading.Thread(target=run_web_server, daemon=True).start()
+
+# --- ২. কনফিগারেশন (আপনার দেওয়া তথ্য অনুযায়ী) ---
 API_ID = 34850757
 API_HASH = "f35b510c4b5b28851b715f349eb9a4d9"
 BOT_TOKEN = "8373972531:AAEbOKuzUbF2e-qcWEhwqoPz4qEcj-nXiEM"
@@ -75,7 +91,7 @@ def download_handler(client, callback_query):
                 return status.delete()
         except: return status.edit("❌ ছবি পাওয়া যায়নি!")
 
-    # 🚫 Copyright-Safe Mode (মেটাডেটা ক্লিনার যুক্ত)
+    # 🚫 Copyright-Safe Mode
     ydl_opts = {
         'format': f'bestvideo[height<={q}]+bestaudio/best' if q.isdigit() else 'bestaudio/best',
         'outtmpl': file_name,
@@ -100,4 +116,6 @@ def download_handler(client, callback_query):
     finally:
         if os.path.exists(file_name): os.remove(file_name)
 
+# --- ৩. রান করা ---
+print("Bot is Starting...")
 app.run()
